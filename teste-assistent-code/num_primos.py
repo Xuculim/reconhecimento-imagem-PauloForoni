@@ -1,22 +1,35 @@
-def is_prime(n: int) -> bool:
-    """Retorna True se n for um número primo, caso contrário False."""
-    if n <= 1:
+from __future__ import annotations
+
+
+def is_divisible_by(value: int, divisor: int) -> bool:
+    """Retorna True quando um valor é divisível por um divisor."""
+    return value % divisor == 0
+
+
+def is_prime(number: int) -> bool:
+    """Retorna True se number for primo, caso contrário False."""
+    if number <= 1:
         return False
-    if n <= 3:
+    if number <= 3:
         return True
-    if n % 2 == 0 or n % 3 == 0:
+    if is_divisible_by(number, 2) or is_divisible_by(number, 3):
         return False
 
-    i = 5
-    while i * i <= n:
-        if n % i == 0 or n % (i + 2) == 0:
+    limit = int(number**0.5) + 1
+    for factor in range(5, limit, 6):
+        if is_divisible_by(number, factor) or is_divisible_by(number, factor + 2):
             return False
-        i += 6
 
     return True
 
 
+def main() -> None:
+    test_numbers = [1, 2, 3, 4, 16, 17, 18, 19, 20, 23]
+
+    for number in test_numbers:
+        result = is_prime(number)
+        print(f"{number} -> {result}")
+
+
 if __name__ == "__main__":
-    teste = [1, 2, 3, 4, 16, 17, 18, 19, 20, 23]
-    for num in teste:
-        print(f"{num} -> {is_prime(num)}")
+    main()

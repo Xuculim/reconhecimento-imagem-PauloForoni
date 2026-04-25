@@ -1,94 +1,73 @@
 # Explicação da Função `is_prime` em Python
 
 ## Visão Geral
-A função `is_prime(n: int) -> bool` verifica se um número inteiro `n` é um número primo. Um número primo é um número maior que 1 que não tem divisores positivos além de 1 e ele mesmo.
+A função `is_prime(number: int) -> bool` determina se um número inteiro positivo é primo. O código foi organizado para ser mais legível, com uma função auxiliar para verificar divisibilidade e um `main()` que centraliza a execução.
 
-## Código da Função
+## Código Refatorado
 
 ```python
-def is_prime(n: int) -> bool:
-    """Retorna True se n for um número primo, caso contrário False."""
-    if n <= 1:
+from __future__ import annotations
+
+
+def is_divisible_by(value: int, divisor: int) -> bool:
+    """Retorna True quando value é divisível por divisor."""
+    return value % divisor == 0
+
+
+def is_prime(number: int) -> bool:
+    """Retorna True se number for primo, caso contrário False."""
+    if number <= 1:
         return False
-    if n <= 3:
+    if number <= 3:
         return True
-    if n % 2 == 0 or n % 3 == 0:
+    if is_divisible_by(number, 2) or is_divisible_by(number, 3):
         return False
 
-    i = 5
-    while i * i <= n:
-        if n % i == 0 or n % (i + 2) == 0:
+    limit = int(number**0.5) + 1
+    for factor in range(5, limit, 6):
+        if is_divisible_by(number, factor) or is_divisible_by(number, factor + 2):
             return False
-        i += 6
 
     return True
+
+
+def main() -> None:
+    test_numbers = [1, 2, 3, 4, 16, 17, 18, 19, 20, 23]
+    for number in test_numbers:
+        print(f"{number} -> {is_prime(number)}")
+
+
+if __name__ == "__main__":
+    main()
 ```
 
-## Explicação Linha por Linha
+## Por que essa versão é mais limpa?
 
-1. **Definição da Função**:
-   ```python
-   def is_prime(n: int) -> bool:
-   ```
-   - Define uma função chamada `is_prime` que recebe um parâmetro `n` do tipo `int` e retorna um valor booleano (`bool`).
+- `is_divisible_by` isola a lógica de divisibilidade, deixando `is_prime` mais legível.
+- Nomes descritivos como `number` e `test_numbers` ajudam a entender o propósito de cada variável.
+- `main()` separa a lógica de teste da definição da função.
+- O loop usa `range(5, limit, 6)` para verificar apenas os candidatos relevantes.
 
-2. **Docstring**:
-   ```python
-   """Retorna True se n for um número primo, caso contrário False."""
-   ```
-   - Uma string de documentação que descreve o que a função faz.
+## Explicação da Lógica
 
-3. **Verificação Inicial para n <= 1**:
-   ```python
-   if n <= 1:
-       return False
-   ```
-   - Números menores ou iguais a 1 não são primos. Por exemplo, 0, 1, números negativos.
+1. **Casos simples**:
+   - `number <= 1` → não primo.
+   - `number <= 3` → primo.
 
-4. **Verificação para n <= 3**:
-   ```python
-   if n <= 3:
-       return True
-   ```
-   - 2 e 3 são números primos. Como já verificamos n > 1, aqui n é 2 ou 3.
+2. **Divisibilidade por 2 ou 3**:
+   - Se o número é par ou múltiplo de 3, ele não é primo.
 
-5. **Verificação de Divisibilidade por 2 ou 3**:
-   ```python
-   if n % 2 == 0 or n % 3 == 0:
-       return False
-   ```
-   - Se n for par (exceto 2, que já foi tratado) ou divisível por 3, não é primo.
+3. **Verificação com passo 6**:
+   - O código testa apenas divisores na forma `6k - 1` e `6k + 1`.
+   - Isso evita verificar números pares e múltiplos de 3 desnecessariamente.
 
-6. **Loop para Verificar Outros Fatores**:
-   ```python
-   i = 5
-   while i * i <= n:
-       if n % i == 0 or n % (i + 2) == 0:
-           return False
-       i += 6
-   ```
-   - Começa com i = 5 (próximo número ímpar após 3).
-   - Verifica se n é divisível por i ou i+2 (que são números da forma 6k±1, otimizando a verificação).
-   - Incrementa i em 6 para pular números pares e múltiplos de 3.
-   - Para quando i*i > n, pois não há necessidade de verificar fatores maiores que a raiz quadrada de n.
-
-7. **Retorno Final**:
-   ```python
-   return True
-   ```
-   - Se nenhum divisor foi encontrado, n é primo.
+4. **Limite pela raiz quadrada**:
+   - O loop vai até `int(number**0.5) + 1`, porque não há divisores úteis acima da raiz quadrada.
 
 ## Exemplo de Uso
-O código inclui um bloco `if __name__ == "__main__":` para testar a função:
 
-```python
-if __name__ == "__main__":
-    teste = [1, 2, 3, 4, 16, 17, 18, 19, 20, 23]
-    for num in teste:
-        print(f"{num} -> {is_prime(num)}")
-```
+Executando o arquivo diretamente, o Python imprime:
 
-Saída esperada:
 ```
 1 -> False
 2 -> True
@@ -102,6 +81,5 @@ Saída esperada:
 23 -> True
 ```
 
-## Eficiência
-- A função usa o algoritmo de verificação de primalidade otimizado, que verifica apenas até a raiz quadrada de n.
-- Pula verificações desnecessárias para números pares e múltiplos de 3, tornando-a mais eficiente para números maiores.
+## Observação
+Este código é um bom equilíbrio entre clareza e desempenho para a verificação de primalidade em números inteiros moderados.
