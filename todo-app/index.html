@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow — Gerenciador de Tarefas</title>
+  <meta name="description" content="Gerencie suas tarefas pessoais e profissionais com TaskFlow. Login seguro, organização por categorias e acompanhamento de progresso." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            slate: {
+              950: '#020617',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            cyan: { 400: '#22d3ee', 500: '#06b6d4' },
+            amber: { 400: '#fbbf24' },
+            emerald: { 400: '#34d399' },
+            rose: { 400: '#fb7185' },
+            orange: { 400: '#f97316' },
+          },
+          keyframes: {
+            fadeSlideIn: {
+              '0%': { opacity: '0', transform: 'translateY(16px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 0 0 rgba(34,211,238,0)' },
+              '50%': { boxShadow: '0 0 18px 4px rgba(34,211,238,0.2)' },
+            },
+          },
+          animation: {
+            'fade-in': 'fadeSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both',
+            'pulse-glow': 'pulseGlow 2.5s ease-in-out infinite',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* ===== DESIGN SYSTEM: tokens e overrides globais ===== */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Grid de fundo sutil (trama geométrica) */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== GLASS CARD ===== */
+    .glass-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 4px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ===== INPUTS ===== */
+    .field {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 4px;
+      padding: 10px 14px;
+      color: #e2e8f0;
+      font-size: 0.875rem;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    .field:focus {
+      border-color: rgba(34, 211, 238, 0.5);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.08);
+    }
+
+    .field::placeholder { color: #475569; }
+
+    select.field option {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+
+    textarea.field { resize: vertical; min-height: 72px; }
+
+    /* ===== BOTÕES ===== */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: #22d3ee;
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 10px 20px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover {
+      background: #06b6d4;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(34, 211, 238, 0.25);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.8125rem;
+      padding: 7px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+
+    .btn-ghost:hover {
+      color: #fb7185;
+      border-color: rgba(251, 113, 133, 0.4);
+      background: rgba(251, 113, 133, 0.06);
+    }
+
+    .btn-done {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      color: #22d3ee;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-done:hover {
+      background: rgba(34, 211, 238, 0.1);
+    }
+
+    .btn-done.completed {
+      background: rgba(52, 211, 153, 0.1);
+      color: #34d399;
+      border-color: rgba(52, 211, 153, 0.35);
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .btn-delete {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: #475569;
+      font-size: 0.75rem;
+      padding: 5px 8px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+
+    .btn-delete:hover {
+      color: #fb7185;
+      border-color: rgba(251, 113, 133, 0.3);
+      background: rgba(251, 113, 133, 0.06);
+    }
+
+    /* ===== BADGES (tipo de tarefa) ===== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 2px;
+      border: 1px solid;
+    }
+
+    .badge-work  { color: #22d3ee; border-color: rgba(34,211,238,0.35);  background: rgba(34,211,238,0.08);  }
+    .badge-personal { color: #fbbf24; border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.08); }
+    .badge-study { color: #34d399; border-color: rgba(52,211,153,0.35);  background: rgba(52,211,153,0.08);  }
+
+    /* ===== TASK CARD ===== */
+    .task-card {
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 4px;
+      background: rgba(30, 41, 59, 0.45);
+      padding: 16px;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+      animation: fadeSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .task-card:hover {
+      border-color: rgba(34, 211, 238, 0.25);
+      box-shadow: 0 0 0 1px rgba(34,211,238,0.08), 0 4px 20px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+
+    .task-card.is-done {
+      opacity: 0.45;
+      order: 1;
+    }
+
+    .task-card.is-done .task-title {
+      text-decoration: line-through;
+      color: #475569;
+    }
+
+    /* ===== ERROR MESSAGES ===== */
+    .error-msg {
+      color: #fb7185;
+      font-size: 0.75rem;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ===== COUNTER BAR ===== */
+    .counter-bar {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      font-size: 0.8125rem;
+      color: #64748b;
+    }
+
+    .counter-bar strong { color: #94a3b8; }
+
+    .counter-bar .sep {
+      width: 1px;
+      height: 14px;
+      background: rgba(148,163,184,0.2);
+    }
+
+    /* ===== DIVIDER ===== */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(148,163,184,0.12), transparent);
+      margin: 24px 0;
+    }
+
+    /* ===== SCROLL TRACK ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 2px; }
+
+    /* ===== TRANSITIONS ===== */
+    #screen-login, #screen-register, #screen-dashboard {
+      transition: opacity 0.25s ease;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #475569;
+    }
+
+    .empty-state svg {
+      width: 40px;
+      height: 40px;
+      stroke: #334155;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes fadeSlideIn {
+      0%   { opacity: 0; transform: translateY(16px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+  <!-- ==================== TELA DE LOGIN ==================== -->
+  <section id="screen-login" class="flex-1 flex items-center justify-center px-4 py-12">
+    <div class="glass-card w-full max-w-md p-8 animate-fade-in">
+
+      <!-- Logo / Brand -->
+      <div class="mb-8">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-cyan-400 text-xl font-bold tracking-tight">Task<span class="text-slate-200">Flow</span></span>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-100 mt-3">Bem-vindo de volta</h1>
+        <p class="text-slate-400 text-sm mt-1">Entre com sua conta para continuar</p>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form id="form-login" novalidate>
+        <div class="space-y-5">
+          <div>
+            <label for="login-email" class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">E-mail</label>
+            <input
+              id="login-email"
+              type="email"
+              class="field"
+              placeholder="seu@email.com"
+              autocomplete="email"
+            />
+            <p id="login-email-error" class="error-msg hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span></span>
+            </p>
+          </div>
+
+          <div>
+            <label for="login-password" class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Senha</label>
+            <input
+              id="login-password"
+              type="password"
+              class="field"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <p id="login-password-error" class="error-msg hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span></span>
+            </p>
+          </div>
+
+          <p id="login-general-error" class="error-msg hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span></span>
+          </p>
+
+          <button type="submit" id="btn-login" class="btn-primary w-full mt-2">Entrar</button>
+        </div>
+      </form>
+
+      <div class="divider"></div>
+
+      <p class="text-center text-sm text-slate-500">
+        Não tem uma conta?
+        <button id="go-register" class="text-cyan-400 hover:text-cyan-300 font-medium ml-1 transition-colors">Cadastre-se</button>
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== TELA DE CADASTRO ==================== -->
+  <section id="screen-register" class="hidden flex-1 flex items-center justify-center px-4 py-12">
+    <div class="glass-card w-full max-w-md p-8 animate-fade-in">
+
+      <div class="mb-8">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-cyan-400 text-xl font-bold tracking-tight">Task<span class="text-slate-200">Flow</span></span>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-100 mt-3">Criar conta</h2>
+        <p class="text-slate-400 text-sm mt-1">Preencha os dados para se cadastrar</p>
+      </div>
+
+      <form id="form-register" novalidate>
+        <div class="space-y-5">
+          <div>
+            <label for="reg-name" class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Nome</label>
+            <input
+              id="reg-name"
+              type="text"
+              class="field"
+              placeholder="Seu nome completo"
+              autocomplete="name"
+            />
+            <p id="reg-name-error" class="error-msg hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span></span>
+            </p>
+          </div>
+
+          <div>
+            <label for="reg-email" class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">E-mail</label>
+            <input
+              id="reg-email"
+              type="email"
+              class="field"
+              placeholder="seu@email.com"
+              autocomplete="email"
+            />
+            <p id="reg-email-error" class="error-msg hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span></span>
+            </p>
+          </div>
+
+          <div>
+            <label for="reg-password" class="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Senha</label>
+            <input
+              id="reg-password"
+              type="password"
+              class="field"
+              placeholder="Mínimo 6 caracteres"
+              autocomplete="new-password"
+            />
+            <p id="reg-password-error" class="error-msg hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span></span>
+            </p>
+          </div>
+
+          <p id="reg-general-error" class="error-msg hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span></span>
+          </p>
+
+          <button type="submit" id="btn-register" class="btn-primary w-full mt-2">Criar conta</button>
+        </div>
+      </form>
+
+      <div class="divider"></div>
+
+      <p class="text-center text-sm text-slate-500">
+        Já tem uma conta?
+        <button id="go-login" class="text-cyan-400 hover:text-cyan-300 font-medium ml-1 transition-colors">Fazer login</button>
+      </p>
+    </div>
+  </section>
+
+  <!-- ==================== DASHBOARD ==================== -->
+  <section id="screen-dashboard" class="hidden flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="relative z-10 border-b border-slate-800/60 bg-slate-900/70 backdrop-blur-xl">
+      <div class="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-cyan-400 font-bold tracking-tight">Task<span class="text-slate-200">Flow</span></span>
+          <span class="w-px h-4 bg-slate-700"></span>
+          <p class="text-slate-300 text-sm">
+            Olá, <strong id="dashboard-username" class="text-slate-100 font-semibold"></strong> 👋
+          </p>
+        </div>
+        <button id="btn-logout" class="btn-ghost">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sair
+        </button>
+      </div>
+    </header>
+
+    <!-- Corpo -->
+    <main class="flex-1 max-w-3xl mx-auto w-full px-6 py-8 space-y-8 relative z-10">
+
+      <!-- Counter bar -->
+      <div class="counter-bar animate-fade-in">
+        <div><strong id="count-total">0</strong> tarefas no total</div>
+        <div class="sep"></div>
+        <div><strong id="count-done">0</strong> concluídas</div>
+      </div>
+
+      <!-- Formulário de nova tarefa -->
+      <div class="glass-card p-6 animate-fade-in">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">Nova tarefa</h2>
+
+        <form id="form-todo" novalidate>
+          <div class="grid grid-cols-1 gap-4">
+
+            <div>
+              <label for="todo-title" class="block text-xs font-medium text-slate-500 mb-1.5">Título <span class="text-rose-400">*</span></label>
+              <input
+                id="todo-title"
+                type="text"
+                class="field"
+                placeholder="O que precisa ser feito?"
+                maxlength="100"
+              />
+              <p id="todo-title-error" class="error-msg hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span></span>
+              </p>
+            </div>
+
+            <div>
+              <label for="todo-type" class="block text-xs font-medium text-slate-500 mb-1.5">Categoria</label>
+              <select id="todo-type" class="field">
+                <option value="work">Trabalho</option>
+                <option value="personal">Pessoal</option>
+                <option value="study">Estudos</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="todo-desc" class="block text-xs font-medium text-slate-500 mb-1.5">Descrição <span class="text-slate-600">(opcional)</span></label>
+              <textarea
+                id="todo-desc"
+                class="field"
+                placeholder="Detalhes ou notas sobre esta tarefa..."
+                maxlength="400"
+              ></textarea>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="submit" id="btn-add-todo" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar Tarefa
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+      <!-- Lista de Tarefas -->
+      <div>
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-4">Suas tarefas</h2>
+        <div id="todo-list" class="flex flex-col gap-3">
+          <!-- Cards renderizados via JS -->
+        </div>
+      </div>
+
+    </main>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
